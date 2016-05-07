@@ -299,8 +299,20 @@
 		}
 		
 		if([[line typeAsString] isEqualToString:@"Character"] && [line.string isEqualToString:@"@"]){
-			[self removeString:@"@" atIndex:[self.textView.string lineRangeForRange:affectedCharRange].location];
-			[self.parser parseChangeInRange:affectedCharRange withString:replacementString];
+			NSRange lineRange = [self.textView.string lineRangeForRange:affectedCharRange];
+			[self removeString:@"@" atIndex:lineRange.location];
+			[self.parser parseChangeInRange:lineRange withString:replacementString];
+			return NO;
+		}
+		
+		// Auto capitalization
+		if([[line typeAsString] isEqualToString:@"Character"] && [line.string hasPrefix:@"@"]){
+			NSRange lineRange = [self.textView.string lineRangeForRange:affectedCharRange];
+			NSString *lineString = [line.string substringFromIndex:1];
+			NSString *upperCaseLineString = [lineString uppercaseString];
+			int length = (int)line.string.length;
+			[self replaceCharactersInRange:NSMakeRange(lineRange.location, length) withString:upperCaseLineString];
+			[self addString:@"\n" atIndex:affectedCharRange.location - 1];
 			return NO;
 		}
 	}
