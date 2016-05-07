@@ -279,8 +279,47 @@
             }
         }
     }
+	
+	if (![self userDidHitEnter:affectedCharRange replacementString:replacementString]){
+		return NO;
+	}
+	
     [self.parser parseChangeInRange:affectedCharRange withString:replacementString];
     return YES;
+}
+
+- (BOOL)userDidHitEnter:(NSRange) affectedCharRange replacementString:(NSString *)replacementString
+{
+	if (affectedCharRange.length == 0 && [replacementString isEqualToString:@"\n"]){
+		int location = [self lineNumberOfLocation:(int)affectedCharRange.location];
+		Line *line = self.parser.lines[location];
+		if([[line typeAsString] isEqualToString:@"Dialogue"]){
+			[self addString:@"\n@" atIndex:affectedCharRange.location];
+			[self.textView setSelectedRange:NSMakeRange(affectedCharRange.location+2, 0)];
+		}
+		
+		if([[line typeAsString] isEqualToString:@"Character"] && [line.string isEqualToString:@"@"]){
+			[self removeString:@"@" atIndex:[self.textView.string lineRangeForRange:affectedCharRange].location];
+			[self.parser parseChangeInRange:affectedCharRange withString:replacementString];
+			return NO;
+		}
+	}
+	return YES;
+}
+
+- (int)lineNumberOfLocation:(int)location{
+	__block int lineNumber = 0;
+	__block int locationNumber = 0;
+	[self.textView.string enumerateLinesUsingBlock:^(NSString * line, BOOL * stop){
+		if(location > locationNumber + line.length){
+			locationNumber += line.length + 1;
+			lineNumber++;
+		}else{
+			*stop = YES;
+		}
+	}];
+	
+	return lineNumber;
 }
 
 - (void)textDidChange:(NSNotification *)notification
