@@ -284,8 +284,27 @@
 		return NO;
 	}
 	
+	if(![self userDidHitTab:affectedCharRange replacementString:replacementString]){
+		return NO;
+	}
+	
     [self.parser parseChangeInRange:affectedCharRange withString:replacementString];
     return YES;
+}
+
+- (BOOL)userDidHitTab:(NSRange) affectedCharRange replacementString:(NSString *)replacementString{
+	if (affectedCharRange.length == 0 && [replacementString isEqualToString:@"\t"]){
+		int location = [self lineNumberOfLocation:(int)affectedCharRange.location];
+		Line *line = self.parser.lines[location];
+		NSLog(@"");
+		if([[line typeAsString] isEqualToString:@"Action"] || [[line typeAsString] isEqualToString:@"Empty"]){
+			[self addString:@"@" atIndex:affectedCharRange.location];
+			[self.textView setSelectedRange:NSMakeRange(affectedCharRange.location + 1, 0)];
+			return NO;
+		}
+	}
+	
+	return YES;
 }
 
 - (BOOL)userDidHitEnter:(NSRange) affectedCharRange replacementString:(NSString *)replacementString
@@ -315,23 +334,18 @@
 			[self addString:@"\n" atIndex:affectedCharRange.location - 1];
 			return NO;
 		}
+		
+		if([[line typeAsString] isEqualToString:@"Heading"]){
+			NSRange lineRange = [self.textView.string lineRangeForRange:affectedCharRange];
+			[self replaceCharactersInRange:lineRange withString:[[line.string uppercaseString] stringByAppendingString:@"\n"]];
+		}
 	}
 	return YES;
 }
 
 - (int)lineNumberOfLocation:(int)location{
-	__block int lineNumber = 0;
-	__block int locationNumber = 0;
-	[self.textView.string enumerateLinesUsingBlock:^(NSString * line, BOOL * stop){
-		if(location > locationNumber + line.length){
-			locationNumber += line.length + 1;
-			lineNumber++;
-		}else{
-			*stop = YES;
-		}
-	}];
-	
-	return lineNumber;
+	NSString *subString = [self.textView.string substringToIndex:location];
+	return (int)[subString componentsSeparatedByString:@"\n"].count -1;
 }
 
 - (void)textDidChange:(NSNotification *)notification
