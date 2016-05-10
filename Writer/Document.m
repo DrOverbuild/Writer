@@ -462,7 +462,12 @@
                 [paragraphStyle setTailIndent:DIALOGUE_RIGHT];
                 
                 [attributes setObject:paragraphStyle forKey:NSParagraphStyleAttributeName];
-                
+				
+				NSArray<NSValue*>* selectedRanges = self.textView.selectedRanges;
+				[textStorage replaceCharactersInRange:range
+										   withString:[[textStorage.string substringWithRange:range] uppercaseString]];
+				[self.textView setSelectedRanges:selectedRanges];
+				
             } else if (line.type == parenthetical) {
                 NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc]init] ;
                 [paragraphStyle setFirstLineHeadIndent:PARENTHETICAL_INDENT];
